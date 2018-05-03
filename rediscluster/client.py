@@ -273,7 +273,16 @@ class StrictRedisCluster(StrictRedis):
                 raise RedisClusterException("{0} - all keys must map to the same key slot".format(command))
             return slots.pop()
 
-        key = args[1]
+        if command == 'XREAD':
+            offs = args.index("STREAMS")
+            streams = args[offs+1:]
+            keys = streams[:len(streams)/2]
+            slots = {self.connection_pool.nodes.keyslot(key) for key in keys}
+            if len(slots) != 1:
+                raise RedisClusterException("{0} - all keys must map to the same key slot".format(command))
+            return slots.pop()
+        else:
+            key = args[1]
 
         return self.connection_pool.nodes.keyslot(key)
 
